@@ -1,6 +1,8 @@
 Sweet Alert for Rails
 ===========================
 
+[![Gem Version](https://badge.fury.io/rb/SweetAlert.svg)](http://badge.fury.io/rb/SweetAlert)
+
 An awesome replacement for JavaScript's alert.
 
 [See it in action](http://tristanedwards.me/sweetalert).
