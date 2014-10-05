@@ -11,7 +11,7 @@ An awesome replacement for JavaScript's alert.
 
 Add this line to your application's Gemfile:
 
-    gem 'sweet-alert-rails'
+    gem 'sweetalert'
 
 And then execute:
 
@@ -19,7 +19,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install sweet-alert-rails
+    $ gem install sweetalert
 
 ## Usage
 
