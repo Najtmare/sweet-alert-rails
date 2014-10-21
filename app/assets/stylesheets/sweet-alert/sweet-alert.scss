@@ -103,6 +103,10 @@
 				box-shadow: rgba(197, 205, 211, 0.8) 0px 0px 2px, rgba(0, 0, 0, 0.0470588) 0px 0px 0px 1px inset !important;
 			}
 		}
+		// Removes selection outline in Firefox
+		&::-moz-focus-inner {
+		  border: 0;
+		}
 	}
 
 	// Only show focus-style when there is multiple choice of actions
@@ -123,6 +127,7 @@
 		border-radius: 50%;
 		margin: 20px auto;
 		position: relative;
+		box-sizing: content-box;
 
 		&.error {
 			border-color: $red;
@@ -172,6 +177,7 @@
 				height: 7px;
 				border-radius: 50%;
 				margin-left: -3px;
+				left: 50%;
 				bottom: 10px;
 				background-color: $orange;
 			}
@@ -211,6 +217,7 @@
 			  width: 60px;
 				height: 120px;
 			  background: white;
+				-webkit-transform: rotate(45deg);
 			  transform: rotate(45deg);
 			}
 			&::before {
@@ -219,7 +226,7 @@
 				left: -33px;
 
 			   -webkit-transform: rotate(-45deg);
-			  transform: rotate(-45deg);		
+			  transform: rotate(-45deg);
 				-webkit-transform-origin: 60px 60px;
 			  transform-origin: 60px 60px;
 			}
@@ -239,6 +246,7 @@
 				height: 80px;
 				border: 4px solid rgba($green, 0.2);
 				border-radius: 50%;
+				box-sizing: content-box;
 
 				position: absolute;
 				left: -4px;
@@ -271,7 +279,7 @@
 
 				&.tip {
 					width: 25px;
-					
+
     			left: 14px;
 					top: 46px;
 
@@ -280,7 +288,7 @@
 				}
 				&.long {
 					width: 47px;
-					
+
     			right: 8px;
 					top: 38px;
 
@@ -299,8 +307,6 @@
 	}
 
 }
-
-
 
 /*
  * Animations

@@ -1,11 +1,25 @@
 // SweetAlert
 // 2014 (c) - Tristan Edwards
 // github.com/t4t5/sweetalert
-(function() {
+(function(window, document) {
 
   var modalClass   = '.sweet-alert',
       overlayClass = '.sweet-overlay',
-      alertTypes   = ['error', 'warning', 'info', 'success'];
+      alertTypes   = ['error', 'warning', 'info', 'success'],
+      defaultParams = {
+        title: '',
+        text: '',
+        type: null,
+        allowOutsideClick: false,
+        showCancelButton: false,
+        closeOnConfirm: true,
+        closeOnCancel: true,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#AEDEF4',
+        cancelButtonText: 'Cancel',
+        imageUrl: null,
+        imageSize: null
+      };
 
 
   /*
@@ -86,19 +100,21 @@
       return ('-' + parseInt(height / 2 + padding) + 'px');
     },
     fadeIn = function(elem, interval) {
-      interval = interval || 16;
-      elem.style.opacity = 0;
-      elem.style.display = 'block';
-      var last = +new Date();
-      var tick = function() {
-        elem.style.opacity = +elem.style.opacity + (new Date() - last) / 100;
-        last = +new Date();
+      if(+elem.style.opacity < 1) {
+        interval = interval || 16;
+        elem.style.opacity = 0;
+        elem.style.display = 'block';
+        var last = +new Date();
+        var tick = function() {
+          elem.style.opacity = +elem.style.opacity + (new Date() - last) / 100;
+          last = +new Date();
 
-        if (+elem.style.opacity < 1) {
-          setTimeout(tick, interval);
-        }
-      };
-      tick();
+          if (+elem.style.opacity < 1) {
+            setTimeout(tick, interval);
+          }
+        };
+        tick();
+      }
     },
     fadeOut = function(elem, interval) {
       interval = interval || 16;
@@ -131,11 +147,11 @@
         // Fallback
         var evt = document.createEvent('MouseEvents');
         evt.initEvent('click', false, false);
-        node.dispatchEvent(evt);  
+        node.dispatchEvent(evt);
       } else if( document.createEventObject ) {
-        node.fireEvent('onclick') ;  
+        node.fireEvent('onclick') ;
       } else if (typeof node.onclick === 'function' ) {
-        node.onclick();  
+        node.onclick();
       }
     },
     stopEventPropagation = function(e) {
@@ -158,7 +174,7 @@
    * Add modal + overlay to DOM
    */
 
-  function initialize() {
+  window.sweetAlertInitialize = function() {
     var sweetHTML = '<div class="sweet-overlay" tabIndex="-1"></div><div class="sweet-alert" tabIndex="-1"><div class="icon error"><span class="x-mark"><span class="line left"></span><span class="line right"></span></span></div><div class="icon warning"> <span class="body"></span> <span class="dot"></span> </div> <div class="icon info"></div> <div class="icon success"> <span class="line tip"></span> <span class="line long"></span> <div class="placeholder"></div> <div class="fix"></div> </div> <div class="icon custom"></div> <h2>Title</h2><p>Text</p><button class="cancel" tabIndex="2">Cancel</button><button class="confirm" tabIndex="1">OK</button></div>',
         sweetWrap = document.createElement('div');
 
@@ -169,41 +185,25 @@
 
     // For development use only!
     /*jQuery.ajax({
-        url: '../lib/sweet-alert.html', // Change path depending on file location
-        dataType: 'html'
-      })
-      .done(function(html) {
-        jQuery('body').append(html);
-      });*/
+      url: '../lib/sweet-alert.html', // Change path depending on file location
+      dataType: 'html'
+    })
+    .done(function(html) {
+      jQuery('body').append(html);
+    });*/
   }
-
-
 
   /*
    * Global sweetAlert function
    */
 
   window.sweetAlert = window.swal = function() {
-
-    // Default parameters
-    var params = {
-      title: '',
-      text: '',
-      type: null,
-      allowOutsideClick: false,
-      showCancelButton: false,
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#AEDEF4',
-      cancelButtonText: 'Cancel',
-      imageUrl: null,
-      imageSize: null
-    };
-
     if (arguments[0] === undefined) {
       window.console.error('sweetAlert expects at least 1 attribute!');
       return false;
     }
 
+    var params = extend({}, defaultParams);
 
     switch (typeof arguments[0]) {
 
@@ -221,19 +221,21 @@
         }
 
         params.title              = arguments[0].title;
-        params.text               = arguments[0].text || params.text;
-        params.type               = arguments[0].type || params.type;
-        params.allowOutsideClick  = arguments[0].allowOutsideClick || params.allowOutsideClick;
-        params.showCancelButton   = arguments[0].showCancelButton || params.showCancelButton;
+        params.text               = arguments[0].text || defaultParams.text;
+        params.type               = arguments[0].type || defaultParams.type;
+        params.allowOutsideClick  = arguments[0].allowOutsideClick || defaultParams.allowOutsideClick;
+        params.showCancelButton   = arguments[0].showCancelButton !== undefined ? arguments[0].showCancelButton : defaultParams.showCancelButton;
+        params.closeOnConfirm     = arguments[0].closeOnConfirm !== undefined ? arguments[0].closeOnConfirm : defaultParams.closeOnConfirm;
+        params.closeOnCancel      = arguments[0].closeOnCancel !== undefined ? arguments[0].closeOnCancel : defaultParams.closeOnCancel;
 
         // Show "Confirm" instead of "OK" if cancel button is visible
-        params.confirmButtonText  = (params.showCancelButton) ? 'Confirm' : params.confirmButtonText;
+        params.confirmButtonText  = (defaultParams.showCancelButton) ? 'Confirm' : defaultParams.confirmButtonText;
 
-        params.confirmButtonText  = arguments[0].confirmButtonText || params.confirmButtonText;
-        params.confirmButtonColor = arguments[0].confirmButtonColor || params.confirmButtonColor;
-        params.cancelButtonText   = arguments[0].cancelButtonText || params.cancelButtonText;
-        params.imageUrl           = arguments[0].imageUrl || params.imageUrl;
-        params.imageSize          = arguments[0].imageSize || params.imageSize;
+        params.confirmButtonText  = arguments[0].confirmButtonText || defaultParams.confirmButtonText;
+        params.confirmButtonColor = arguments[0].confirmButtonColor || defaultParams.confirmButtonColor;
+        params.cancelButtonText   = arguments[0].cancelButtonText || defaultParams.cancelButtonText;
+        params.imageUrl           = arguments[0].imageUrl || defaultParams.imageUrl;
+        params.imageSize          = arguments[0].imageSize || defaultParams.imageSize;
         params.doneFunction       = arguments[1] || null;
 
         break;
@@ -243,8 +245,6 @@
         return false;
 
     }
-
-    //console.log(params.confirmButtonColor);
 
     setParameters(params);
     fixVerticalPosition();
@@ -294,10 +294,30 @@
           }
           break;
         case ("click"):
-          if (targetedConfirm && doneFunctionExists && modalIsVisible) {
-            params.doneFunction();
+          if (targetedConfirm && doneFunctionExists && modalIsVisible) { // Clicked "confirm"
+
+            params.doneFunction(true);
+
+            if (params.closeOnConfirm) {
+              closeModal();
+            }
+          } else if (doneFunctionExists && modalIsVisible) { // Clicked "cancel"
+
+            // Check if callback function expects a parameter (to track cancel actions)
+            var functionAsStr          = String(params.doneFunction).replace(/\s/g, '');
+            var functionHandlesCancel  = functionAsStr.substring(0, 9) === "function(" && functionAsStr.substring(9, 10) !== ")";
+
+            if (functionHandlesCancel) {
+              params.doneFunction(false);
+            }
+
+            if (params.closeOnCancel) {
+              closeModal();
+            }
+          } else {
+            closeModal();
           }
-          closeModal();
+
           break;
       }
     };
@@ -435,11 +455,25 @@
         if (lastFocusedButton !== undefined) {
           lastFocusedButton.focus();
           lastFocusedButton = undefined;
-        }        
+        }
       }, 0);
     };
   };
 
+  /**
+   * Set default params for each popup
+   * @param {Object} userParams
+   */
+  window.swal.setDefaults = function(userParams) {
+    if (!userParams) {
+      throw new Error('userParams is required');
+    }
+    if (typeof userParams !== 'object') {
+      throw new Error('userParams has to be a object');
+    }
+
+    extend(defaultParams, userParams);
+  };
 
   /*
    * Set type, text and actions on modal
@@ -454,10 +488,10 @@
         $confirmBtn = modal.querySelector('button.confirm');
 
     // Title
-    $title.innerHTML = escapeHtml(params.title);
+    $title.innerHTML = escapeHtml(params.title).split("\n").join("<br>");
 
     // Text
-    $text.innerHTML = escapeHtml(params.text || '');
+    $text.innerHTML = escapeHtml(params.text || '').split("\n").join("<br>");
     if (params.text) {
       show($text);
     }
@@ -562,7 +596,7 @@
   /*
    * Set hover, active and focus-states for buttons (source: http://www.sitepoint.com/javascript-generate-lighter-darker-color)
    */
-   
+
   function colorLuminance(hex, lum) {
     // Validate hex string
     hex = String(hex).replace(/[^0-9a-f]/gi, '');
@@ -580,6 +614,16 @@
     }
 
     return rgb;
+  }
+
+  function extend(a, b){
+    for (var key in b) {
+      if (b.hasOwnProperty(key)) {
+        a[key] = b[key];
+      }
+    }
+
+    return a;
   }
 
   function hexToRgb(hex) {
@@ -668,23 +712,23 @@
    */
 
   (function () {
-	  if (document.readyState === "complete" || document.readyState === "interactive") {
-		  initialize();
+	  if (document.readyState === "complete" || document.readyState === "interactive" && document.body) {
+		  sweetAlertInitialize();
 	  } else {
 		  if (document.addEventListener) {
 			  document.addEventListener('DOMContentLoaded', function factorial() {
 				  document.removeEventListener('DOMContentLoaded', arguments.callee, false);
-				  initialize();
+				  sweetAlertInitialize();
 			  }, false);
 		  } else if (document.attachEvent) {
 			  document.attachEvent('onreadystatechange', function() {
 				  if (document.readyState === 'complete') {
 					  document.detachEvent('onreadystatechange', arguments.callee);
-					  initialize();
+					  sweetAlertInitialize();
 				  }
 			  });
 		  }
 	  }
   })();
 
-})();
+})(window, document);
