@@ -3,8 +3,8 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name        = 'sweet-alert'
-  s.version     = '0.0.2'
-  s.date        = '2014-05-10'
+  s.version     = '0.0.3'
+  s.date        = '2014-10-21'
   s.summary     = "The awesome replacement for Javascript's alert"
   s.authors     = ["Najtmare"]
   s.email       = 'millan@sino.net'
