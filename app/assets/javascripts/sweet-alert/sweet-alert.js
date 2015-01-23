@@ -1,7 +1,7 @@
 // SweetAlert
 // 2014 (c) - Tristan Edwards
 // github.com/t4t5/sweetalert
-;(function(window, document) {
+;(function(window, document, undefined) {
 
   var modalClass   = '.sweet-alert',
       overlayClass = '.sweet-overlay',
@@ -19,7 +19,11 @@
         cancelButtonText: 'Cancel',
         imageUrl: null,
         imageSize: null,
-        timer: null
+        timer: null,
+        customClass: '',
+        html: false,
+        animation: true,
+        allowEscapeKey: true
       };
 
 
@@ -28,7 +32,14 @@
    */
 
   var getModal = function() {
-      return document.querySelector(modalClass);
+      var $modal = document.querySelector(modalClass);
+
+      if (!$modal) {
+        sweetAlertInitialize();
+        $modal = getModal();
+      }
+
+      return $modal;
     },
     getOverlay = function() {
       return document.querySelector(overlayClass);
@@ -97,7 +108,7 @@
           padding;
       if (typeof getComputedStyle !== "undefined") { /* IE 8 */
         padding = parseInt(getComputedStyle(elem).getPropertyValue('padding'), 10);
-      } else{
+      } else {
         padding = parseInt(elem.currentStyle.padding);
       }
 
@@ -142,7 +153,7 @@
     fireClick = function(node) {
       // Taken from http://www.nonobtrusive.com/2011/11/29/programatically-fire-crossbrowser-click-event-with-javascript/
       // Then fixed for today's Chrome browser.
-      if (MouseEvent) {
+      if (typeof MouseEvent === 'function') {
         // Up-to-date approach
         var mevt = new MouseEvent('click', {
           view: window,
@@ -177,6 +188,7 @@
       previousWindowKeyDown,
       lastFocusedButton;
 
+
   /*
    * Add modal + overlay to DOM
    */
@@ -187,9 +199,12 @@
 
     sweetWrap.innerHTML = sweetHTML;
 
-    // For readability: check sweet-alert.html
-    document.body.appendChild(sweetWrap);
+    // Append elements to body
+    while (sweetWrap.firstChild) {
+      document.body.appendChild(sweetWrap.firstChild);
+    }
   };
+
 
   /*
    * Global sweetAlert function
@@ -199,23 +214,40 @@
     // Copy arguments to the local args variable
     var args = arguments;
     if (getModal() !== null) {
-        // If getModal returns values then continue
-        modalDependant.apply(this, args);
+      // If getModal returns values then continue
+      modalDependant.apply(this, args);
     } else {
-        // If getModal returns null i.e. no matches, then set up a interval event to check the return value until it is not null	
-        var modalCheckInterval = setInterval(function() {
-          if (getModal() !== null) {
-            clearInterval(modalCheckInterval);
-            modalDependant.apply(this, args);
-          }
+      // If getModal returns null i.e. no matches, then set up a interval event to check the return value until it is not null
+      var modalCheckInterval = setInterval(function() {
+        if (getModal() !== null) {
+          clearInterval(modalCheckInterval);
+          modalDependant.apply(this, args);
+        }
       }, 100);
     }
   };
-        
+
   function modalDependant() {
 
+    var customizations = arguments[0];
+
+    /*
+     * Use argument if defined or default value from params object otherwise.
+     * Supports the case where a default value is boolean true and should be
+     * overridden by a corresponding explicit argument which is boolean false.
+     */
+    function argumentOrDefault(key) {
+      var args = customizations;
+
+      if (typeof args[key] !== 'undefined') {
+        return args[key];
+      } else {
+        return defaultParams[key];
+      }
+    }
+
     if (arguments[0] === undefined) {
-      window.console.error('sweetAlert expects at least 1 attribute!');
+      logStr('SweetAlert expects at least 1 attribute!');
       return false;
     }
 
@@ -223,6 +255,7 @@
 
     switch (typeof arguments[0]) {
 
+      // Ex: swal("Hello", "Just testing", "info");
       case 'string':
         params.title = arguments[0];
         params.text  = arguments[1] || '';
@@ -230,35 +263,50 @@
 
         break;
 
+      // Ex: swal({title:"Hello", text: "Just testing", type: "info"});
       case 'object':
         if (arguments[0].title === undefined) {
-          window.console.error('Missing "title" argument!');
+          logStr('Missing "title" argument!');
           return false;
         }
 
-        params.title              = arguments[0].title;
-        params.text               = arguments[0].text || defaultParams.text;
-        params.type               = arguments[0].type || defaultParams.type;
-        params.customClass        = arguments[0].customClass || params.customClass;
-        params.allowOutsideClick  = arguments[0].allowOutsideClick || defaultParams.allowOutsideClick;
-        params.showCancelButton   = arguments[0].showCancelButton !== undefined ? arguments[0].showCancelButton : defaultParams.showCancelButton;
-        params.closeOnConfirm     = arguments[0].closeOnConfirm !== undefined ? arguments[0].closeOnConfirm : defaultParams.closeOnConfirm;
-        params.closeOnCancel      = arguments[0].closeOnCancel !== undefined ? arguments[0].closeOnCancel : defaultParams.closeOnCancel;
-        params.timer              = arguments[0].timer || defaultParams.timer;
+        params.title = arguments[0].title;
+
+        var availableCustoms = [
+          'text',
+          'type',
+          'customClass',
+          'allowOutsideClick',
+          'showCancelButton',
+          'closeOnConfirm',
+          'closeOnCancel',
+          'timer',
+          'confirmButtonColor',
+          'cancelButtonText',
+          'imageUrl',
+          'imageSize',
+          'html',
+          'animation',
+          'allowEscapeKey'];
+
+        // It would be nice to just use .forEach here, but IE8... :(
+        var numCustoms = availableCustoms.length;
+        for (var customIndex = 0; customIndex < numCustoms; customIndex++) {
+          var customName = availableCustoms[customIndex];
+          params[customName] = argumentOrDefault(customName);
+        }
 
         // Show "Confirm" instead of "OK" if cancel button is visible
-        params.confirmButtonText  = (defaultParams.showCancelButton) ? 'Confirm' : defaultParams.confirmButtonText;
-        params.confirmButtonText  = arguments[0].confirmButtonText || defaultParams.confirmButtonText;
-        params.confirmButtonColor = arguments[0].confirmButtonColor || defaultParams.confirmButtonColor;
-        params.cancelButtonText   = arguments[0].cancelButtonText || defaultParams.cancelButtonText;
-        params.imageUrl           = arguments[0].imageUrl || defaultParams.imageUrl;
-        params.imageSize          = arguments[0].imageSize || defaultParams.imageSize;
+        params.confirmButtonText  = (params.showCancelButton) ? 'Confirm' : defaultParams.confirmButtonText;
+        params.confirmButtonText  = argumentOrDefault('confirmButtonText');
+
+        // Function to call when clicking on cancel/OK
         params.doneFunction       = arguments[1] || null;
 
         break;
 
       default:
-        window.console.error('Unexpected type of argument! Expected "string" or "object", got ' + typeof arguments[0]);
+        logStr('Unexpected type of argument! Expected "string" or "object", got ' + typeof arguments[0]);
         return false;
 
     }
@@ -275,7 +323,7 @@
     var onButtonEvent = function(event) {
       var e = event || window.event;
       var target = e.target || e.srcElement,
-          targetedConfirm    = (target.className === 'confirm'),
+          targetedConfirm    = (target.className.indexOf("confirm") !== -1),
           modalIsVisible     = hasClass(modal, 'visible'),
           doneFunctionExists = (params.doneFunction && modal.getAttribute('data-has-done-function') === 'true');
 
@@ -316,7 +364,7 @@
             params.doneFunction(true);
 
             if (params.closeOnConfirm) {
-              closeModal();
+              window.sweetAlert.close();
             }
           } else if (doneFunctionExists && modalIsVisible) { // Clicked "cancel"
 
@@ -329,10 +377,10 @@
             }
 
             if (params.closeOnCancel) {
-              closeModal();
+              window.sweetAlert.close();
             }
           } else {
-            closeModal();
+            window.sweetAlert.close();
           }
 
           break;
@@ -361,7 +409,7 @@
           outsideClickIsAllowed = modal.getAttribute('data-allow-ouside-click') === 'true';
 
       if (!clickedOnModal && !clickedOnModalChild && modalIsVisible && outsideClickIsAllowed) {
-        closeModal();
+        window.sweetAlert.close();
       }
     };
 
@@ -369,7 +417,7 @@
     // Keyboard interactions
     var $okButton = modal.querySelector('button.confirm'),
         $cancelButton = modal.querySelector('button.cancel'),
-        $modalButtons = modal.querySelectorAll('button:not([type=hidden])');
+        $modalButtons = modal.querySelectorAll('button[tabindex]');
 
 
     function handleKeyDown(event) {
@@ -418,8 +466,7 @@
               // Do nothing - let the browser handle it.
               $targetElement = undefined;
             }
-        } else if (keyCode === 27 && !($cancelButton.hidden || $cancelButton.style.display === 'none')) {
-          // ESC to cancel only if there's a cancel button displayed (like the alert() window).
+        } else if (keyCode === 27 && params.allowEscapeKey === true) {
           $targetElement = $cancelButton;
         } else {
           // Fallback - let the browser handle it.
@@ -433,6 +480,7 @@
     }
 
     previousWindowKeyDown = window.onkeydown;
+
     window.onkeydown = handleKeyDown;
 
     function handleOnBlur(event) {
@@ -480,11 +528,12 @@
     };
   }
 
-  /**
+
+  /*
    * Set default params for each popup
    * @param {Object} userParams
    */
-  window.swal.setDefaults = function(userParams) {
+  window.sweetAlert.setDefaults = window.swal.setDefaults = function(userParams) {
     if (!userParams) {
       throw new Error('userParams is required');
     }
@@ -494,6 +543,7 @@
 
     extend(defaultParams, userParams);
   };
+
 
   /*
    * Set type, text and actions on modal
@@ -508,10 +558,11 @@
         $confirmBtn = modal.querySelector('button.confirm');
 
     // Title
-    $title.innerHTML = escapeHtml(params.title).split("\n").join("<br>");
+    $title.innerHTML = (params.html) ? params.title : escapeHtml(params.title).split("\n").join("<br>");
 
     // Text
-    $text.innerHTML = escapeHtml(params.text || '').split("\n").join("<br>");
+    $text.innerHTML = (params.html) ? params.text : escapeHtml(params.text || '').split("\n").join("<br>");
+
     if (params.text) {
       show($text);
     }
@@ -519,11 +570,17 @@
     //Custom Class
     if (params.customClass) {
       addClass(modal, params.customClass);
+      modal.setAttribute('data-custom-class', params.customClass);
+    } else {
+      // Find previously set classes and remove them
+      var customClass = modal.getAttribute('data-custom-class');
+      removeClass(modal, customClass);
+      modal.setAttribute('data-custom-class', "");
     }
 
     // Icon
     hide(modal.querySelectorAll('.icon'));
-    if (params.type) {
+    if (params.type && !isIE8()) {
       var validType = false;
       for (var i = 0; i < alertTypes.length; i++) {
         if (params.type === alertTypes[i]) {
@@ -532,7 +589,7 @@
         }
       }
       if (!validType) {
-        window.console.error('Unknown alert type: ' + params.type);
+        logStr('Unknown alert type: ' + params.type);
         return false;
       }
       var $icon = modal.querySelector('.icon.' + params.type);
@@ -555,7 +612,6 @@
           addClass($icon.querySelector('.dot'), 'pulseWarningIns');
           break;
       }
-
     }
 
     // Custom image
@@ -569,19 +625,15 @@
           _imgHeight = 80;
 
       if (params.imageSize) {
-        var imgWidth  = params.imageSize.split('x')[0];
-        var imgHeight = params.imageSize.split('x')[1];
+        var dimensions = params.imageSize.toString().split('x');
+        var imgWidth  = dimensions[0];
+        var imgHeight = dimensions[1];
 
         if (!imgWidth || !imgHeight) {
-          window.console.error("Parameter imageSize expects value with format WIDTHxHEIGHT, got " + params.imageSize);
+          logStr("Parameter imageSize expects value with format WIDTHxHEIGHT, got " + params.imageSize);
         } else {
           _imgWidth  = imgWidth;
           _imgHeight = imgHeight;
-
-          $customIcon.css({
-            'width': imgWidth + 'px',
-            'height': imgHeight + 'px'
-          });
         }
       }
       $customIcon.setAttribute('style', $customIcon.getAttribute('style') + 'width:' + _imgWidth + 'px; height:' + _imgHeight + 'px');
@@ -615,6 +667,13 @@
     // Done-function
     var hasDoneFunction = (params.doneFunction) ? true : false;
     modal.setAttribute('data-has-done-function', hasDoneFunction);
+
+    // Prevent modal from animating
+    if (!params.animation){
+      modal.setAttribute('data-animation', 'none');
+    } else{
+      modal.setAttribute('data-animation', 'pop');
+    }
 
     // Close timer
     modal.setAttribute('data-timer', params.timer);
@@ -666,11 +725,7 @@
   }
 
 
-
-  /*
-   * Animations
-   */
-
+  // Animation when opening modal
   function openModal() {
     var modal = getModal();
     fadeIn(getOverlay(), 10);
@@ -690,12 +745,14 @@
 
     if (timer !== "null" && timer !== "") {
       modal.timeout = setTimeout(function() {
-        closeModal();
+        window.sweetAlert.close();
       }, timer);
     }
   }
 
-  function closeModal() {
+
+  // Aninmation when closing modal
+  window.sweetAlert.close = window.swal.close = function() {
     var modal = getModal();
     fadeOut(getOverlay(), 5);
     fadeOut(modal, 5);
@@ -729,7 +786,7 @@
     }
     lastFocusedButton = undefined;
     clearTimeout(modal.timeout);
-  }
+  };
 
 
   /*
@@ -742,30 +799,20 @@
     modal.style.marginTop = getTopMargin(getModal());
   }
 
+  // If browser is Internet Explorer 8
+  function isIE8() {
+    if (window.attachEvent && !window.addEventListener) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-
-  /*
-   * If library is injected after page has loaded
-   */
-
-  (function () {
-	  if (document.readyState === "complete" || document.readyState === "interactive" && document.body) {
-		  window.sweetAlertInitialize();
-	  } else {
-		  if (document.addEventListener) {
-			  document.addEventListener('DOMContentLoaded', function factorial() {
-				  document.removeEventListener('DOMContentLoaded', arguments.callee, false);
-				  window.sweetAlertInitialize();
-			  }, false);
-		  } else if (document.attachEvent) {
-			  document.attachEvent('onreadystatechange', function() {
-				  if (document.readyState === 'complete') {
-					  document.detachEvent('onreadystatechange', arguments.callee);
-					  window.sweetAlertInitialize();
-				  }
-			  });
-		  }
-	  }
-  })();
+  // Error messages for developers
+  function logStr(string) {
+    if (window.console) { // IE...
+      window.console.log("SweetAlert: " + string);
+    }
+  }
 
 })(window, document);
