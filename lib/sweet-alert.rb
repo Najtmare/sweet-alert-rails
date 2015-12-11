@@ -1,3 +1,3 @@
 module SweetAlert
-	require "sweet-alert/engine"
+  require "sweet-alert/engine"
 end

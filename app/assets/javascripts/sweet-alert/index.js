@@ -1,1 +1,1 @@
-//= require ./sweetalert
+//= require ./sweet-alert
